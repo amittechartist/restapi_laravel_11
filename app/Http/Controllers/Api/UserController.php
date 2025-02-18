@@ -26,13 +26,17 @@ class UserController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $request->user()->id,
+            'phone_number' => 'sometimes|string|unique:users,phone_number,' . $request->user()->id . '|regex:/^[0-9]{7,15}$/',
+            'country_code' => 'sometimes|string|max:5|regex:/^\+\d+$/',
         ]);
+
         if ($validator->fails()) {
             return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
         }
+
         // Update user
         $user = $request->user();
-        $user->update($request->only(['name', 'email']));
+        $user->update($request->only(['name', 'email', 'phone_number', 'country_code']));
 
         return response()->json([
             'success' => true,
@@ -40,7 +44,6 @@ class UserController extends Controller
             'user' => $user
         ], 200);
     }
-
     // Change Password Method
     public function changePassword(Request $request)
     {

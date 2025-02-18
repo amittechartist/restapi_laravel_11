@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
+use App\Helpers\OtpHelper;
 use App\Models\User;
 
 class AuthController extends Controller
@@ -49,6 +50,33 @@ class AuthController extends Controller
             ],
         ], 200);
     }
+    // Login with Container OTP
+    public function loginWithContainer(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'otp' => 'required|digits:6',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !OtpHelper::verifyOtp($user, $request->otp)) {
+            return response()->json(['success' => false, 'message' => 'Invalid or expired OTP.'], 401);
+        }
+
+        // Invalidate the OTP after successful login
+        OtpHelper::invalidateOtp($user);
+
+        $user->tokens()->delete();
+        $token = $user->createToken('container-login')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Login successful with container OTP.',
+            'token' => $token,
+            'user' => $user,
+        ], 200);
+    }
     // Signup Method
     public function signup(Request $request)
     {
@@ -81,6 +109,46 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+            ],
+        ], 201);
+    }
+    public function signupWithCountrycode(Request $request)
+    {
+        // Validate request
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'phone_number' => 'required|string|unique:users,phone_number|regex:/^[0-9]{7,15}$/',
+            'country_code' => 'required|string|max:5|regex:/^\+\d+$/',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+        }
+
+        // Create user
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone_number' => $request->phone_number,
+            'country_code' => $request->country_code,
+            'password' => Hash::make($request->password),
+        ]);
+
+        // Generate token
+        $token = $user->createToken('API Token')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User registered successfully',
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone_number' => $user->phone_number,
+                'country_code' => $user->country_code,
             ],
         ], 201);
     }
