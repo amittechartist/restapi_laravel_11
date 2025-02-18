@@ -5,68 +5,69 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 
 class UserController extends Controller
 {
-    public function index()
+    // CHECK AUTH
+    public function checkAuth(Request $request)
     {
-        return response()->json(User::all());
+        return response()->json([
+            'success' => true,
+            'message' => 'User is authenticated',
+            'user' => $request->user()
+        ], 200);
     }
-
-    public function store(Request $request)
+    // Update User Details
+    public function updateUser(Request $request)
     {
-        $user = User::create($request->all());
-        return response()->json($user, 201);
-    }
-
-    public function show($id)
-    {
-        $user = User::find($id);
-        if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
-        }
-        return response()->json($user);
-    }
-
-    public function destroy($id)
-    {
-        $user = User::find($id);
-        if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
-        }
-        $user->delete();
-        return response()->json(['message' => 'User deleted successfully']);
-    }
-    public function update(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $request->user()->id,
+        // Validate request data
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,' . $request->user()->id,
         ]);
-
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+        }
+        // Update user
         $user = $request->user();
-        $user->update($request->only('name', 'email'));
+        $user->update($request->only(['name', 'email']));
 
-        return response()->json(['message' => 'User updated successfully', 'user' => $user]);
+        return response()->json([
+            'success' => true,
+            'message' => 'User details updated successfully',
+            'user' => $user
+        ], 200);
     }
 
     // Change Password Method
     public function changePassword(Request $request)
     {
+        // Validate request data
         $request->validate([
-            'current_password' => 'required',
-            'new_password' => 'required|min:6|confirmed',
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:6|confirmed',
         ]);
 
         $user = $request->user();
 
+        // Check if the current password matches
         if (!Hash::check($request->current_password, $user->password)) {
-            return response()->json(['message' => 'Current password is incorrect'], 400);
+            return response()->json([
+                'success' => false,
+                'message' => 'Current password is incorrect'
+            ], 403);
         }
 
-        $user->update(['password' => Hash::make($request->new_password)]);
+        // Update the password
+        $user->update([
+            'password' => Hash::make($request->new_password)
+        ]);
 
-        return response()->json(['message' => 'Password changed successfully']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Password changed successfully'
+        ], 200);
     }
 }
