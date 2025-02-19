@@ -18,13 +18,15 @@ Route::get('/login', function () {
 Route::prefix('v1')->group(function () {
     // Authentication Routes
     Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/admin-login', [AuthController::class, 'adminLogin']);
     Route::post('/signup', [AuthController::class, 'signup']);
     Route::post('/signup-with-countrycode', [AuthController::class, 'signupWithCountrycode']);
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
     Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+    // ADMIN AUTH
+    Route::post('/admin-login', [AuthController::class, 'adminLogin']);
+    Route::post('/admin-logout', [AuthController::class, 'adminLogout'])->middleware('auth:sanctum', 'admin');
     // Authentication With OTP Routes
     Route::post('/login-container', [OtpAuthController::class, 'loginWithPassword']);
     Route::post('/reset-otp', [OtpAuthController::class, 'resetOtp']);
@@ -35,19 +37,10 @@ Route::prefix('v1')->group(function () {
     Route::post('/user-change-password', [UserController::class, 'changePassword'])->middleware('auth:sanctum');
     // send email
     Route::post('/send-email', [EmailSenderController::class, 'send']);
+    Route::get('/email-config', [EmailConfigController::class, 'show'])->middleware('auth:sanctum', 'admin');
+    Route::put('/email-config', [EmailConfigController::class, 'update'])->middleware('auth:sanctum', 'admin');
     // TEST FILE UPLOAD APIS
     Route::post('/files/upload', [FileController::class, 'upload']);
     Route::delete('/files', [FileController::class, 'delete']);
     Route::post('/files/get-url', [FileController::class, 'getUrl']);
-});
-
-Route::prefix('v1')->group(function () {
-    Route::middleware(['auth:sanctum', 'admin'])->group(function () {
-        // Authentication Routes
-        Route::post('/admin-logout', [AuthController::class, 'adminLogout']);
-        // Email Config Routes
-        Route::get('/email-config', [EmailConfigController::class, 'show']);
-        // Update the email configuration
-        Route::put('/email-config', [EmailConfigController::class, 'update']);
-    });
 });
