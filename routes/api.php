@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\OtpAuthController;
 use App\Http\Controllers\Api\EmailConfigController;
 use App\Http\Controllers\Api\EmailSenderController;
+use App\Http\Controllers\Api\FileController;
 
 
 Route::get('/login', function () {
@@ -34,6 +35,10 @@ Route::prefix('v1')->group(function () {
     Route::post('/user-change-password', [UserController::class, 'changePassword'])->middleware('auth:sanctum');
     // send email
     Route::post('/send-email', [EmailSenderController::class, 'send']);
+    // TEST FILE UPLOAD APIS
+    Route::post('/files/upload', [FileController::class, 'upload']);
+    Route::delete('/files', [FileController::class, 'delete']);
+    Route::post('/files/get-url', [FileController::class, 'getUrl']);
 });
 
 Route::prefix('v1')->group(function () {
