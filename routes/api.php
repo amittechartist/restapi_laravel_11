@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\OtpAuthController;
 use App\Http\Controllers\Api\EmailConfigController;
+use App\Http\Controllers\Api\EmailSenderController;
+
 
 Route::get('/login', function () {
     return response()->json(['success' => false, 'message' => 'Unauthorized.'], 401);
@@ -30,6 +32,8 @@ Route::prefix('v1')->group(function () {
     Route::get('/check-auth', [UserController::class, 'checkAuth'])->middleware('auth:sanctum');
     Route::post('/user-update', [UserController::class, 'updateUser'])->middleware('auth:sanctum');
     Route::post('/user-change-password', [UserController::class, 'changePassword'])->middleware('auth:sanctum');
+    // send email
+    Route::post('/send-email', [EmailSenderController::class, 'send']);
 });
 
 Route::prefix('v1')->group(function () {
