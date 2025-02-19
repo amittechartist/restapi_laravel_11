@@ -24,6 +24,7 @@ class User extends Authenticatable
         'password',
         'phone_number',
         'country_code',
+        'role',
         'otp',
         'otp_expires_at',
     ];
@@ -52,5 +53,9 @@ class User extends Authenticatable
             'password' => 'hashed',
             'otp_expires_at' => 'datetime',
         ];
+    }
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
     }
 }

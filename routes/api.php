@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\OtpAuthController;
+use App\Http\Controllers\Api\EmailConfigController;
 
 Route::get('/login', function () {
     return response()->json(['success' => false, 'message' => 'Unauthorized.'], 401);
@@ -14,6 +15,7 @@ Route::get('/login', function () {
 Route::prefix('v1')->group(function () {
     // Authentication Routes
     Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/admin-login', [AuthController::class, 'adminLogin']);
     Route::post('/signup', [AuthController::class, 'signup']);
     Route::post('/signup-with-countrycode', [AuthController::class, 'signupWithCountrycode']);
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
@@ -28,4 +30,15 @@ Route::prefix('v1')->group(function () {
     Route::get('/check-auth', [UserController::class, 'checkAuth'])->middleware('auth:sanctum');
     Route::post('/user-update', [UserController::class, 'updateUser'])->middleware('auth:sanctum');
     Route::post('/user-change-password', [UserController::class, 'changePassword'])->middleware('auth:sanctum');
+});
+
+Route::prefix('v1')->group(function () {
+    Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+        // Authentication Routes
+        Route::post('/admin-logout', [AuthController::class, 'adminLogout']);
+        // Email Config Routes
+        Route::get('/email-config', [EmailConfigController::class, 'show']);
+        // Update the email configuration
+        Route::put('/email-config', [EmailConfigController::class, 'update']);
+    });
 });

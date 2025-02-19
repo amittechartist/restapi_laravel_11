@@ -50,6 +50,55 @@ class AuthController extends Controller
             ],
         ], 200);
     }
+    // Admin Login Method
+    public function adminLogin(Request $request)
+    {
+        // Validate request
+        $validator = Validator::make($request->all(), [
+            'email'    => 'required|email',
+            'password' => 'required|string|min:6',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first()
+            ], 422);
+        }
+
+        // Attempt authentication
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid email or password.',
+            ], 401);
+        }
+
+        // Check if the user has the admin role
+        if ($user->role !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Access Denied. Not an admin.',
+            ], 403);
+        }
+
+        // Clear previous tokens and create a new token with admin abilities (optional)
+        $user->tokens()->delete();
+        $token = $user->createToken('Admin API Token', ['admin'])->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Admin login successful',
+            'token'   => $token,
+            'user'    => [
+                'id'    => $user->id,
+                'name'  => $user->name,
+                'email' => $user->email,
+            ],
+        ], 200);
+    }
     // Login with Container OTP
     public function loginWithContainer(Request $request)
     {
@@ -95,6 +144,7 @@ class AuthController extends Controller
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'role' => 'user',
             'password' => Hash::make($request->password),
         ]);
 
@@ -178,7 +228,6 @@ class AuthController extends Controller
             'email' => $user->email
         ], 200);
     }
-
     // Verify OTP
     public function verifyOtp(Request $request)
     {
@@ -209,7 +258,6 @@ class AuthController extends Controller
             'message' => 'OTP verified successfully. You can now reset your password.',
         ], 200);
     }
-
     // Reset Password
     public function resetPassword(Request $request)
     {
@@ -250,6 +298,16 @@ class AuthController extends Controller
     }
     // Logout Method
     public function logout(Request $request)
+    {
+        // Revoke the token that was used to authenticate the current request
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Logout successful',
+        ], 200);
+    }
+    public function adminLogout(Request $request)
     {
         // Revoke the token that was used to authenticate the current request
         $request->user()->currentAccessToken()->delete();
