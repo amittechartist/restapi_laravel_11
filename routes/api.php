@@ -8,11 +8,13 @@ use App\Http\Controllers\Api\OtpAuthController;
 use App\Http\Controllers\Api\EmailConfigController;
 use App\Http\Controllers\Api\EmailSenderController;
 use App\Http\Controllers\Api\FileController;
+use App\Http\Controllers\Api\SiteSettingsController;
+use App\Http\Controllers\Api\WalletController;
+use App\Http\Controllers\Api\PaymentGatewayController;
+use App\Http\Controllers\Api\ContactMessageController;
+use App\Http\Controllers\Api\SubscriptionController;
+use App\Http\Controllers\Api\SupportTicketController;
 
-
-Route::get('/login', function () {
-    return response()->json(['success' => false, 'message' => 'Unauthorized.'], 401);
-})->name('login');
 
 
 Route::prefix('v1')->group(function () {
@@ -34,7 +36,13 @@ Route::prefix('v1')->group(function () {
     // User Routes
     Route::get('/check-auth', [UserController::class, 'checkAuth'])->middleware('auth:sanctum');
     Route::post('/user-update', [UserController::class, 'updateUser'])->middleware('auth:sanctum');
+    Route::post('/user/avatar', [UserController::class, 'updateAvatar'])->middleware('auth:sanctum');
     Route::post('/user-change-password', [UserController::class, 'changePassword'])->middleware('auth:sanctum');
+    // Site settings
+    Route::get('/settings/site-settings', [SiteSettingsController::class, 'show'])->middleware('auth:sanctum', 'admin');
+    Route::post('/settings/site-settings', [SiteSettingsController::class, 'update'])->middleware('auth:sanctum', 'admin');
+    Route::post('/settings/social-links', [SiteSettingsController::class, 'updateSocialLinks'])->middleware('auth:sanctum', 'admin');
+
     // send email
     Route::post('/send-email', [EmailSenderController::class, 'send']);
     Route::get('/email-config', [EmailConfigController::class, 'show'])->middleware('auth:sanctum', 'admin');
@@ -43,4 +51,34 @@ Route::prefix('v1')->group(function () {
     Route::post('/files/upload', [FileController::class, 'upload']);
     Route::delete('/files', [FileController::class, 'delete']);
     Route::post('/files/get-url', [FileController::class, 'getUrl']);
+    // Wallet routes (authenticated users)
+    Route::get('/wallet', [WalletController::class, 'show'])->middleware('auth:sanctum');
+    Route::post('/wallet/add-funds', [WalletController::class, 'addFunds'])->middleware('auth:sanctum');
+    Route::get('/wallet/transactions', [WalletController::class, 'transactions'])
+        ->middleware('auth:sanctum');
+    Route::post('/wallet/use-funds', [WalletController::class, 'useFunds'])->middleware('auth:sanctum');
+    Route::post('/payment/callback', [PaymentGatewayController::class, 'callback']);
+
+    Route::post('/admin/wallet/adjust', [WalletController::class, 'adjustWallet'])
+        ->middleware('auth:sanctum', 'admin');
+    Route::get('/payment/logs', [PaymentGatewayController::class, 'logs'])
+        ->middleware('auth:sanctum', 'admin');
+    // Contact Us endpoints
+    Route::post('/contact', [ContactMessageController::class, 'store']);
+    Route::get('/contact', [ContactMessageController::class, 'index'])
+        ->middleware('auth:sanctum', 'admin');
+
+    // Subscription endpoints
+    Route::post('/subscribe', [SubscriptionController::class, 'store']);
+    Route::get('/subscribe', [SubscriptionController::class, 'index'])
+        ->middleware('auth:sanctum', 'admin');
+    // Public/user endpoints (protected by auth:sanctum)
+    Route::post('/tickets', [SupportTicketController::class, 'createTicket'])->middleware('auth:sanctum');
+    Route::get('/tickets/{ticketId}', [SupportTicketController::class, 'showTicket'])->middleware('auth:sanctum');
+    Route::post('/tickets/{ticketId}/reply', [SupportTicketController::class, 'replyTicket'])->middleware('auth:sanctum');
+
+    // Admin endpoints (apply admin middleware as needed)
+    Route::get('/admin/tickets', [SupportTicketController::class, 'listTickets'])->middleware('auth:sanctum', 'admin');
+    Route::post('/admin/tickets/{ticketId}/reply', [SupportTicketController::class, 'replyTicket'])->middleware('auth:sanctum', 'admin');
+    Route::post('/admin/tickets/{ticketId}/close', [SupportTicketController::class, 'closeTicket'])->middleware('auth:sanctum', 'admin');
 });
